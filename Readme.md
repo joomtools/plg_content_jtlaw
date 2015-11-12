@@ -6,4 +6,5 @@ DATEINAME steht als Platzhalter für z.B.:
 - widerrufsbelehrung
 - impressum
 - datenschutzerklaerung
+
 Diese Dateien müssen mit der Endung '.html' unter der angegebenen Server-URL abrufbar sein.
