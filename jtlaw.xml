@@ -1,30 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
-<extension version="3.4.5" type="plugin" group="content" method="upgrade">
-	<name>PLG_CONTENT_JTLAW</name>
-  <author>Guido De Gobbis</author>
-  <creationDate>Nov. 2015</creationDate>
-	<copyright>(c) JoomTools.de. All rights reserved.</copyright>
-	<license>GNU/GPLv3, see http://www.gnu.org/licenses/gpl-3.0.de.html</license>
-  <authorEmail>guido.de.gobbis@jootmools.de</authorEmail>
-  <version>1.0.0</version>
-  <description>PLG_CONTENT_JTLAW_DESC</description>
-	
-  <files>
-  	<filename plugin="jtlaw">jtlaw.php</filename>
-		<folder>language</folder>
-  </files>
+<extension version="3.4.5"
+           type="plugin"
+           group="content"
+           method="upgrade">
+    <name>PLG_CONTENT_JTLAW</name>
+    <author>Guido De Gobbis</author>
+    <creationDate>Nov. 2015</creationDate>
+    <copyright>(c) JoomTools.de. All rights reserved.</copyright>
+    <license>GNU/GPLv3, see http://www.gnu.org/licenses/gpl-3.0.de.html</license>
+    <authorEmail>guido.de.gobbis@jootmools.de</authorEmail>
+    <version>1.0.1</version>
+    <description>PLG_CONTENT_JTLAW_DESC</description>
 
-	<config>
-		<fields name="params">
+    <files>
+        <filename plugin="jtlaw">jtlaw.php</filename>
+        <folder>language</folder>
+    </files>
 
-			<fieldset name="basic">
-				<field name="server" type="url" default="" label="PLG_CONTENT_JTLAW_SERVER_LABEL" description="PLG_CONTENT_JTLAW_SERVER_DESC" />
-				<field name="cachetime" type="text" default="120" label="PLG_CONTENT_JTLAW_CACHETIME_LABEL" description="PLG_CONTENT_JTLAW_CACHETIME_DESC" />
-			</fieldset>
+    <config>
+        <fields name="params">
 
-		</fields>
-	</config>
-	<updateservers>
-		<server type="collection" priority="1" name="Plugin - KM - Law updates">http://www.joomtools.de/updates/updatelist.xml</server>
-	</updateservers>
+            <fieldset name="basic">
+                <field name="server"
+                       type="url"
+                       default=""
+                       required="true"
+                       label="PLG_CONTENT_JTLAW_SERVER_LABEL"
+                       description="PLG_CONTENT_JTLAW_SERVER_DESC"/>
+                <field name="cachetime"
+                       type="text"
+                       default="120"
+                       label="PLG_CONTENT_JTLAW_CACHETIME_LABEL"
+                       description="PLG_CONTENT_JTLAW_CACHETIME_DESC"/>
+            </fieldset>
+
+        </fields>
+    </config>
+    <updateservers>
+        <server type="collection" priority="1" name="Plugin - KM - Law updates">http://www.joomtools.de/updates/updatelist.xml</server>
+    </updateservers>
 </extension>
