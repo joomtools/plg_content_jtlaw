@@ -1,7 +1,7 @@
 # JT - Law
 Die Nutzung ist denkbar einfach.
-Der Plugin-Aufruf ist {jtlaw DATEINAME}
-DATEINAME steht als Platzhalter für z.B.:
+  Der Plugin-Aufruf ist {jtlaw DATEINAME}
+  DATEINAME steht als Platzhalter für z.B.:
 - agb
 - widerrufsbelehrung
 - impressum
