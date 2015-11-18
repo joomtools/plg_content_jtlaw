@@ -25,6 +25,6 @@
 		</fields>
 	</config>
 	<updateservers>
-		<server type="collection" priority="1" name="Plugin - KM - Law updates">http://www.joomtools.de/updates/updatelist.xml</server>
+		<server type="collection" priority="1" name="Plugin - JT - Law updates">http://www.joomtools.de/updates/updatelist.xml</server>
 	</updateservers>
 </extension>
