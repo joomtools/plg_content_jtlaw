@@ -19,7 +19,7 @@
 
 			<fieldset name="basic">
 				<field name="server" type="url" default="" label="PLG_CONTENT_JTLAW_SERVER_LABEL" description="PLG_CONTENT_JTLAW_SERVER_DESC" />
-				<field name="cachetime" type="text" default="120" label="PLG_CONTENT_JTLAW_CACHETIME_LABEL" description="PLG_CONTENT_JTLAW_CACHETIME_DESC" />
+				<field name="cachetime" type="text" default="1440" label="PLG_CONTENT_JTLAW_CACHETIME_LABEL" description="PLG_CONTENT_JTLAW_CACHETIME_DESC" />
 			</fieldset>
 
 		</fields>
