@@ -22,7 +22,7 @@ class plgContentJtlaw extends JPlugin
     protected $_buffer = null;
 
     /* Regex fürt Pluginaufruf im Content */
-    protected $regex = '#(<[^>]+>|){jtlaw (.*)}(</[^>]+>|)#siU';
+    protected $regex = '#(<(\w+)[^>]+>|){jtlaw (.*)}(</\\2+>|)#siU';
 
     public function __construct(&$subject, $config)
     {
@@ -77,7 +77,7 @@ class plgContentJtlaw extends JPlugin
         /* Schleife zur Abarbeitung mehrer Aufrufe in einem Beitrag */
         foreach ($filename as $_file)
         {
-            $file = strtolower($_file[2]) . '.html';
+            $file = strtolower($_file[3]) . '.html';
 
             /* Cacheprüfung
              * ist die gesuchte Datei schon im Cache
