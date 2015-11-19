@@ -22,7 +22,7 @@ class plgContentJtlaw extends JPlugin
     protected $_buffer = null;
 
     /* Regex fürt Pluginaufruf im Content */
-    protected $regex = '#(<(\w+)[^>]+>|){jtlaw (.*)}(</\\2+>|)#siU';
+    protected $regex = '#(<(\w*+)[^>]*>|){jtlaw (.*)}(</\\2+>|)#siU';
 
     public function __construct(&$subject, $config)
     {
