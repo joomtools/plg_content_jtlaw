@@ -22,7 +22,7 @@ class plgContentJtlaw extends JPlugin
     protected $_buffer = null;
 
     /* Regex fürt Pluginaufruf im Content */
-    protected $regex = '#(<(\w*+)[^>]*>|){jtlaw (.*)}(</\\2+>|)#siU';
+    protected $regex = '#(<(\w+)[^>]*>|){jtlaw (.*)}(</\\2+>|)#siU';
 
     public function __construct(&$subject, $config)
     {
@@ -183,8 +183,6 @@ class plgContentJtlaw extends JPlugin
             }
 
             $result = $data->body;
-            /* id=... in class=... ändern */
-            $result = preg_replace('#id=#i', 'class=', $result);
 
             /* <br> in <br /> umwandeln */
             $result = preg_replace('#<br>#i', '<br />', $result);
