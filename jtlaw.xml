@@ -23,7 +23,7 @@
                        default=""
                        label="PLG_CONTENT_JTLAW_SERVER_LABEL"
                        description="PLG_CONTENT_JTLAW_SERVER_DESC"/>
-                <field name="cacheTime"
+                <field name="cachetime"
                        type="text"
                        default="1440"
                        label="PLG_CONTENT_JTLAW_CACHETIME_LABEL"
