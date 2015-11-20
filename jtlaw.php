@@ -1,10 +1,14 @@
 <?php
 /**
- * @Copyright  JoomTools.de
- * @package    JT - Law - Plugin for Joomla! 3.4.5 and higher
- * @author     Guido De Gobbis
- * @link       http://www.joomtools.de
- * @license    GNU/GPL <http://www.gnu.org/licenses/>
+ * Plugin for Joomla! 2.5 and higher
+ * Insert and cache HTML files from Your own Server
+ *
+ * @package    Joomla.Plugin
+ * @subpackage Content.jtlaw
+ * @author     Guido De Gobbis <guido.de.gobbis@joomtools.de>
+ * @copyright  2015 JoomTools
+ * @license    GNU/GPLv3 <http://www.gnu.org/licenses/gpl-3.0.de.html>
+ * @link       http://joomtools.de
  */
 
 // no direct access
@@ -12,187 +16,200 @@ defined('_JEXEC') or die('Restricted access');
 
 jimport('joomla.plugin.plugin');
 jimport('joomla.filesystem.file');
+jimport('joomla.filesystem.folder');
 
-class plgContentJtlaw extends JPlugin
+/**
+ * Class PlgContentJtlaw
+ *
+ * Insert and cache HTML files from Your own Server
+ *
+ * @package    Joomla.Plugin
+ * @subpackage Content.jtlaw
+ */
+class PlgContentJtlaw extends JPlugin
 {
-    /* Plugin-Params */
-    protected $pluginParams = null;
-
-    /* Ausgabebuffer */
-    protected $_buffer = null;
-
-    /* Regex fürt Pluginaufruf im Content */
-    protected $regex = '#(<(\w+)[^>]*>|){jtlaw (.*)}(</\\2+>|)#siU';
-
-    public function __construct(&$subject, $config)
-    {
-        parent::__construct($subject, $config);
-        $this->loadLanguage('plg_content_jtlaw');
-    }
+    protected $plgParams = null;
+    protected $message   = null;
+    protected $buffer    = null;
 
     public function onContentPrepare($context, &$article, &$params, $limitstart)
     {
         $app = JFactory::getApplication();
+        $this->loadLanguage('plg_content_jtlaw');
+
         if (!$app->isSite())
         {
             return;
         }
 
-        /* Prüfen ob Plugin-Platzhalter im Text ist */
-        if (JString::strpos($article->text, '{jtlaw ') === false)
+        if (strpos($article->text, '{jtlaw ') === false)
         {
             return;
         }
 
-        //$start = microtime(true);
+        $cachePath                    = JPATH_PLUGINS . '/content/jtlaw/cache';
+        $this->plgParams              = $this->params->toArray();
+        $this->plgParams['server']    = rtrim($this->plgParams['server'], '\/');
+        $this->plgParams['cachetime'] = $this->plgParams['cachetime'] * 60;
 
-        /* Plugin-Parameter auslesen */
-        $this->pluginParams              = $this->params->toArray();
-        $this->pluginParams['server']    = rtrim($this->pluginParams['server'], '\/');
-        $this->pluginParams['cachePath'] = JPATH_PLUGINS . '/content/jtlaw/cache';
-        $this->pluginParams['cachetime'] = $this->pluginParams['cachetime'] * 60;
-
-        if ($this->pluginParams['server'] == '')
+        if ($this->plgParams['server'] == '')
         {
-            $app->enqueueMessage(JText::_('PLG_CONTENT_JTLAW_MESSAGE_NO_SERVER'), 'warning');
-
-            return;
+            $this->message['warning'][] = JText::_('PLG_CONTENT_JTLAW_WARNING_NO_SERVER');
         }
 
-        if ($this->pluginParams['cachetime'] < '7200')
+        if ($this->plgParams['cachetime'] < '7200')
         {
-            $this->pluginParams['cachetime'] = '7200';
+            $this->plgParams['cachetime'] = '7200';
         }
 
-        $cachetime = $this->pluginParams['cachetime'];
-        //$cachetime = 0;
-        $cachePath = $this->pluginParams['cachePath'];
-        $filename  = $this->_getFilename($article);
+        if (JDEBUG)
+        {
+            $this->plgParams['cachetime'] = '0';
+        }
 
         if (!JFolder::exists($cachePath))
         {
             JFolder::create($cachePath);
         }
 
-        /* Schleife zur Abarbeitung mehrer Aufrufe in einem Beitrag */
-        foreach ($filename as $_file)
+        $plgCalls = $this->getPlgCall($article->text);
+
+        foreach ($plgCalls as $plgCall)
         {
-            $file = strtolower($_file[3]) . '.html';
+            $fileName  = strtolower($plgCall[3]) . '.html';
+            $cacheFile = $cachePath . '/' . $fileName;
 
-            /* Cacheprüfung
-             * ist die gesuchte Datei schon im Cache
-             * 	NEIN - Datei von Janolaw holen
-             * 	JA - Cachzeit prüfen
-             *
-             * ist die Cachezeit abgelaufen
-             * 	JA - Datei löschen und von Janolaw neu holen
-             *
-             * SONST - Datei auslesen und in _buffer schreiben
-             */
-
-            if ($checkFile = JFile::exists($cachePath . '/' . $file)) // Datei wurde im Cache gefunden
+            if ($checkFile = JFile::exists($cacheFile))
             {
-                /* Aktualität der Datei im Cache */
-                $checkFile = $this->_getFileTime($file);
+                $checkFile = $this->getFileTime($cacheFile);
             }
 
-            /* Datei von Janolaw, oder aus dem Cache abholen */
-            $this->_getFile($file, $checkFile);
-
-            /* Plugin-Aufruf durch HTML-Ausgabe ersetzen */
-            $article->text = str_replace($_file[0], $this->_buffer, $article->text);
-
-            $this->_buffer = null;
-            //$finish        = microtime(true);
-            //$app->enqueueMessage('Verbrauchte Zeit: ' . number_format(($finish - $start), 4, ',', '.') . ' sek.', 'info');
+            $this->setBuffer($cacheFile, $checkFile);
+            $article->text = str_replace($plgCall[0], $this->buffer, $article->text);
+            $this->buffer  = null;
         }
-    }
 
-    /* Methode zum Auslesen und auswerten des Pluginaufrufes */
-    protected function _getFilename(&$article)
-    {
-        $return = false;
-        $p1     = preg_match_all($this->regex, $article->text, $matches, PREG_SET_ORDER);
-
-        if ($p1 !== false)
+        if ($this->message !== null)
         {
-            $return = $matches;
-        }
+            foreach($this->message as $type => $msgs)
+            {
+                if ($type == 'error')
+                {
+                    $msgs[] = JText::_('PLG_CONTENT_JTLAW_ERROR_CHECKLIST');
+                }
 
-        return $return;
+                $msg = implode('<br />', $msgs);
+                $app->enqueueMessage($msg, $type);
+            }
+        }
     }
 
-    /* Methode zur Prüfung der Erstellungszeit der Datei */
-    protected function _getFileTime($file)
+    /**
+     * Find all plugin call's in $text and return them as array
+     *
+     * @param string $text Text with plugin call's
+     *
+     * @return array       All matches found in $text
+     */
+    protected function getPlgCall($text)
     {
-        /* aktueller Timestamp */
-        $timestamp = time();
-        $return    = true;
-        $cachetime = $this->pluginParams['cachetime'];
-        $cachePath = $this->pluginParams['cachePath'];
+        $regex = '@(<(\w*+)[^>]*>|){jtlaw\s(.*)}(</\2>|)@siU';
+        $p1    = preg_match_all($regex, $text, $matches, PREG_SET_ORDER);
 
-        /* Timestamp der Datei */
-        $fileCtimestamp = filectime($cachePath . '/' . $file);
-        $fileMtimestamp = filemtime($cachePath . '/' . $file);
-        $fileTimestamp  = ($fileCtimestamp < $fileMtimestamp) ? $fileMtimestamp : $fileCtimestamp;
-        $normal         = date('d.m.Y-H:i:s', $fileTimestamp);
-
-        /* Datei - Cachezeit */
-        $dateiCachetime = $timestamp - $fileTimestamp;
-
-        /* Prüfung ob Cachzeit abgelaufen ist */
-        if ($dateiCachetime >= $cachetime)
+        if ($p1)
         {
-            $return = false;
+            foreach ($matches as $key => $match)
+            {
+                $closeTag = ($match[2] != '') ? strpos($match[4], $match[2]) : true;
+
+                if (!$closeTag)
+                {
+                    $matches[$key][0] = str_replace($match[1], '', $match[0]);
+                }
+            }
+
+            return $matches;
         }
 
-        return $return;
+        return array();
     }
 
-    /* Datei von Janolaw, oder aus dem Cache abholen */
-    protected function _getFile($file, $checkFile)
+    /**
+     * Check to see if the cache file is up to date
+     *
+     * @param string $file Filename with absolute path
+     *
+     * @return bool return true if cached file is up to date
+     */
+    protected function getFileTime($file)
     {
-        $cachePath = $this->pluginParams['cachePath'];
-        $server    = $this->pluginParams['server'];
+        $time      = time();
+        $cacheTime = $this->plgParams['cachetime'];
+        $fileCtime = filectime($file);
+        $fileMtime = filemtime($file);
+        $fileTime  = ($fileCtime < $fileMtime)
+            ? $fileMtime
+            : $fileCtime;
+
+        $control = $time - $fileTime;
+
+        if ($control >= $cacheTime)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Load HTML file from Server or get cached file
+     *
+     * @param string     $cacheFile Filename with absolute path
+     * @param bool|false $checkFile
+     *
+     * @return bool
+     */
+    protected function setBuffer($cacheFile, $checkFile = false)
+    {
+        $server   = $this->plgParams['server'];
+        $fileName = basename($cacheFile);
 
         if ($checkFile)
         {
-            $this->_buffer = @file_get_contents($cachePath . '/' . $file);
+            $this->buffer = @file_get_contents($cacheFile);
         }
         else
         {
-
             $http = JHttpFactory::getHttp();
-            $data = $http->get($server . '/' . $file);
+            $data = $http->get($server . '/' . $fileName);
 
             if ($data->code !== 200)
             {
-                if (JFile::exists($cachePath . '/' . $file))
+                if (JFile::exists($cacheFile))
                 {
-                    $this->_getFile($file, true);
-
-                    return;
+                    $this->setBuffer($cacheFile, true);
                 }
                 else
                 {
-                    //Fehler ausgeben
-                    JFactory::getApplication()->enqueueMessage(JText::sprintf('PLG_CONTENT_JTLAW_MESSAGE_NO_CACHE_NO_SERVER', $file), 'error');
+                    $this->message['error'][] = JText::sprintf(
+                        'PLG_CONTENT_JTLAW_ERROR_NO_CACHE_SERVER', $fileName
+                    );
 
-                    return;
+                    return false;
                 }
             }
 
-            $result = $data->body;
+            $search  = array('@<br>@i');
+            $replace = array('<br />');
+            $result  = preg_replace($search, $replace, $data->body);
 
-            /* <br> in <br /> umwandeln */
-            $result = preg_replace('#<br>#i', '<br />', $result);
+            JFile::delete($cacheFile);
+            JFile::write($cacheFile, $result);
 
-            $this->_buffer = $result;
-
-            JFile::delete($cachePath . '/' . $file);
-            JFile::write($cachePath . '/' . $file, $result);
+            $this->buffer = $result;
         }
-    }
 
+        return true;
+    }
 }
 
