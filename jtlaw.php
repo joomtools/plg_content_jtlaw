@@ -19,14 +19,14 @@ jimport('joomla.filesystem.file');
 jimport('joomla.filesystem.folder');
 
 /**
- * Class PlgContentJtlaw
+ * Class plgContentJtlaw
  *
  * Insert and cache HTML files from Your own Server
  *
  * @package    Joomla.Plugin
  * @subpackage Content.jtlaw
  */
-class PlgContentJtlaw extends JPlugin
+class plgContentJtlaw extends JPlugin
 {
     protected $plgParams = null;
     protected $message   = null;
