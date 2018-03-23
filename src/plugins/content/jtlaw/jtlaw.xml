@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension version="2.5" type="plugin" group="content" method="upgrade">
+    <name>PLG_CONTENT_JTLAW</name>
+	<creationDate>##DATE##</creationDate>
+	<author>Guido De Gobbis</author>
+	<authorEmail>support@joomtools.de</authorEmail>
+	<authorUrl>www.joomtools.de</authorUrl>
+	<copyright>Copyright (C) ##YEAR## JoomTools.de. All rights reserved.</copyright>
+	<license>GPL v3</license>
+	<version>##VERSION##</version>
+    <description>PLG_CONTENT_JTLAW_DESC</description>
+
+	<files>
+		##FILES##
+	</files>
+
+	<languages folder="administrator/language">
+		##LANGUAGE_FILES##
+	</languages>
+
+    <config>
+        <fields name="params">
+
+            <fieldset name="basic">
+                <field name="server"
+                       type="url"
+                       default=""
+                       label="PLG_CONTENT_JTLAW_SERVER_LABEL"
+                       description="PLG_CONTENT_JTLAW_SERVER_DESC"/>
+                <field name="cachetime"
+                       type="text"
+                       default="1440"
+                       label="PLG_CONTENT_JTLAW_CACHETIME_LABEL"
+                       description="PLG_CONTENT_JTLAW_CACHETIME_DESC"/>
+            </fieldset>
+
+        </fields>
+    </config>
+    <updateservers>
+        <server type="collection" priority="1" name="JT - Updateserver">https://github.com/JoomTools/plg_content_jtlaw/blob/master/plg_content_jtlaw.xml</server>
+    </updateservers>
+</extension>
