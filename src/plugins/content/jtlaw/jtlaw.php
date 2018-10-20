@@ -6,14 +6,15 @@
  * @author       Guido De Gobbis <support@joomtools.de>
  * @copyright    2018 JoomTools.de - All rights reserved.
  * @license      GNU General Public License version 3 or later
-**/
+ **/
 
 // No direct access
 defined('_JEXEC') or die;
 
-jimport('joomla.plugin.plugin');
-jimport('joomla.filesystem.file');
-jimport('joomla.filesystem.folder');
+use Joomla\CMS\Language\Text;
+
+JLoader::import('joomla.filesystem.file');
+JLoader::import('joomla.filesystem.folder');
 
 /**
  * Class plgContentJtlaw
@@ -22,57 +23,84 @@ jimport('joomla.filesystem.folder');
  *
  * @package     Joomla.Plugin
  * @subpackage  Content.jtlaw
- * @since       2.5
+ * @since       1.0.0
  */
 class PlgContentJtlaw extends JPlugin
 {
-	protected $plgParams = null;
-
-	protected $message = null;
-
+	/**
+	 * Affects constructor behavior. If true, language files will be loaded automatically.
+	 *
+	 * @var     boolean
+	 * @since   1.0.5
+	 */
+	protected $autoloadLanguage = true;
+	/**
+	 * Global application object
+	 *
+	 * @var     JApplication
+	 * @since   1.0.5
+	 */
+	protected $app;
+	/**
+	 * Revised plugin parameters
+	 *
+	 * @var     array
+	 * @since   1.0.0
+	 */
+	protected $plgParams = [];
+	/**
+	 * Collection point for error messages
+	 *
+	 * @var     array
+	 * @since   1.0.0
+	 */
+	protected $message = [];
+	/**
+	 * Replacement for plugin call
+	 *
+	 * @var     string
+	 * @since   1.0.0
+	 */
 	protected $buffer = null;
 
 	/**
 	 * onContentPrepare
 	 *
-	 * @param   string   $context   The context of the content being passed to the plugin.
-	 * @param   object   &$article  The article object
-	 * @param   object   &$params   The article params
-	 * @param   integer  $page      Optional page number. Unused. Defaults to zero.
+	 * @param   string   $context  The context of the content being passed to the plugin.
+	 * @param   object   $article  The article object.  Note $article->text is also available
+	 * @param   mixed    $params   The article params
+	 * @param   integer  $page     The 'page' number
 	 *
-	 * @return  void
+	 * @return   void
+	 * @since    1.0.0
 	 */
-	public function onContentPrepare($context, &$article, &$params, $page)
+	public function onContentPrepare($context, &$article, &$params, $page = 0)
 	{
-		$app = JFactory::getApplication();
-		$this->loadLanguage('plg_content_jtlaw');
-
-		if ($app->isClient('administrator'))
-		{
-			return;
-		}
-
-		if (strpos($article->text, '{jtlaw ') === false)
+		// Don't run in administration Panel or when the content is being indexed
+		if (strpos($article->text, '{jtlaw ') === false
+			|| $this->app->isClient('administrator') === true
+			|| $context == 'com_finder.indexer'
+			|| $this->app->input->getCmd('layout') == 'edit')
 		{
 			return;
 		}
 
 		$cachePath                    = JPATH_PLUGINS . '/content/jtlaw/cache';
-		$this->plgParams              = $this->params->toArray();
-		$this->plgParams['server']    = rtrim($this->plgParams['server'], '\/');
-		$this->plgParams['cachetime'] = $this->plgParams['cachetime'] * 60;
+		$cacheOnOff                   = filter_var($this->params->get('cache', 1), FILTER_VALIDATE_BOOLEAN);
+		$this->plgParams['server']    = rtrim($this->params->get('server'), '\\/');
+		$this->plgParams['cachetime'] = (int) $this->params->get('cachetime', 1440) * 60;
 
 		if ($this->plgParams['server'] == '')
 		{
-			$this->message['warning'][] = JText::_('PLG_CONTENT_JTLAW_WARNING_NO_SERVER');
+			$this->message['warning'][] = Text::_('PLG_CONTENT_JTLAW_WARNING_NO_SERVER');
 		}
 
-		if ($this->plgParams['cachetime'] < '7200')
+		if ($this->plgParams['cachetime'] < '600')
 		{
-			$this->plgParams['cachetime'] = '7200';
+			$this->plgParams['cachetime'] = '600';
 		}
 
-		if (JDEBUG)
+		if ($cacheOnOff === false)
 		{
 			$this->plgParams['cachetime'] = '0';
 		}
@@ -82,34 +110,34 @@ class PlgContentJtlaw extends JPlugin
 			JFolder::create($cachePath);
 		}
 
-		$plgCalls = $this->getPlgCall($article->text);
+		$plgCalls = $this->getPlgCalls($article->text);
 
 		foreach ($plgCalls as $plgCall)
 		{
 			$fileName  = strtolower($plgCall[3]) . '.html';
 			$cacheFile = $cachePath . '/' . $fileName;
 
-			if ($checkFile = JFile::exists($cacheFile))
+			if ($useCacheFile = JFile::exists($cacheFile))
 			{
-				$checkFile = $this->getFileTime($cacheFile);
+				$useCacheFile = $this->getFileTime($cacheFile);
 			}
 
-			$this->setBuffer($cacheFile, $checkFile);
+			$this->setBuffer($cacheFile, $useCacheFile);
 			$article->text = str_replace($plgCall[0], $this->buffer, $article->text);
 			$this->buffer  = null;
 		}
 
-		if ($this->message !== null)
+		if (JDEBUG && !empty($this->message))
 		{
 			foreach ($this->message as $type => $msgs)
 			{
 				if ($type == 'error')
 				{
-					$msgs[] = JText::_('PLG_CONTENT_JTLAW_ERROR_CHECKLIST');
+					$msgs[] = Text::_('PLG_CONTENT_JTLAW_ERROR_CHECKLIST');
 				}
 
 				$msg = implode('<br />', $msgs);
-				$app->enqueueMessage($msg, $type);
+				$this->app->enqueueMessage($msg, $type);
 			}
 		}
 	}
@@ -119,11 +147,12 @@ class PlgContentJtlaw extends JPlugin
 	 *
 	 * @param   string  $text  Text with plugin call's
 	 *
-	 * @return  array All matches found in $text
+	 * @return   array  All matches found in $text
+	 * @since    1.0.0
 	 */
-	protected function getPlgCall($text)
+	protected function getPlgCalls($text)
 	{
-		$regex = '@(<(\w*+)[^>]*>|){jtlaw\s(.*)}(</\2>|)@siU';
+		$regex = '@(<(\w*+)[^>]*>|){jtlaw\s(.*)}(</\\2>|)@siU';
 		$p1    = preg_match_all($regex, $text, $matches, PREG_SET_ORDER);
 
 		if ($p1)
@@ -149,7 +178,8 @@ class PlgContentJtlaw extends JPlugin
 	 *
 	 * @param   string  $file  Filename with absolute path
 	 *
-	 * @return  bool true if cached file is up to date
+	 * @return   bool  true if cached file is up to date
+	 * @since    1.0.0
 	 */
 	protected function getFileTime($file)
 	{
@@ -170,50 +200,49 @@ class PlgContentJtlaw extends JPlugin
 	/**
 	 * Load HTML file from Server or get cached file
 	 *
-	 * @param   string      $cacheFile  Filename with absolute path
-	 * @param   bool|false  $checkFile  See return from {@see PlgContentJtlaw->getFileTime()}
+	 * @param   string $cacheFile    Filename with absolute path
+	 * @param   bool   $useCacheFile @see PlgContentJtlaw->getFileTime($file)
 	 *
-	 * @return  bool true if buffer is set else false
+	 * @return   bool  true if buffer is set else false
+	 * @since    1.0.0
 	 */
-	protected function setBuffer($cacheFile, $checkFile = false)
+	protected function setBuffer($cacheFile, $useCacheFile = false)
 	{
 		$server   = $this->plgParams['server'];
 		$fileName = basename($cacheFile);
 
-		if ($checkFile)
-		{
-			$this->buffer = @file_get_contents($cacheFile);
-		}
-		else
+		if ($useCacheFile === false)
 		{
 			$http = JHttpFactory::getHttp();
 			$data = $http->get($server . '/' . $fileName);
 
-			if ($data->code !== 200)
+			if ($data->code >= 200 && $data->code < 400)
 			{
-				if (JFile::exists($cacheFile))
-				{
-					$this->setBuffer($cacheFile, true);
-				}
-				else
-				{
-					$this->message['error'][] = JText::sprintf(
-						'PLG_CONTENT_JTLAW_ERROR_NO_CACHE_SERVER', $fileName
-					);
+				$result = preg_replace(array('@<br>@i'), array('<br />'), $data->body);
 
-					return false;
-				}
+				JFile::delete($cacheFile);
+				JFile::write($cacheFile, $result);
+
+				$this->buffer = $result;
+
+				return true;
 			}
 
-			$search  = array('@<br>@i');
-			$replace = array('<br />');
-			$result  = preg_replace($search, $replace, $data->body);
+			if (JFile::exists($cacheFile))
+			{
+				$this->setBuffer($cacheFile, true);
 
-			JFile::delete($cacheFile);
-			JFile::write($cacheFile, $result);
+				return true;
+			}
 
-			$this->buffer = $result;
+			$this->message['error'][] = Text::sprintf(
+				'PLG_CONTENT_JTLAW_ERROR_NO_CACHE_SERVER', $fileName, $data->code
+			);
+
+			return false;
 		}
+
+		$this->buffer = @file_get_contents($cacheFile);
 
 		return true;
 	}
