@@ -9,3 +9,7 @@ DATEINAME steht als Platzhalter für z.B.:
 - datenschutzerklaerung
 
 Diese Dateien müssen mit der Endung '.html' unter der angegebenen Server-URL abrufbar sein.
+
+Mindestvorrausetzungen:
+- Joomla! 3.8 
+- PHP7.1
