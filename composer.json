@@ -1,0 +1,11 @@
+{
+  "name"       : "JoomTools/plg_content_jtlaw",
+  "description": "Plugin to create individual forms",
+  "license"    : "GPL-3+",
+  "require"    : {
+    "php": ">=5.4"
+  },
+  "require-dev": {
+    "joomla-projects/jorobo": "dev-develop"
+  }
+}
