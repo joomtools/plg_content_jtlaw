@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension version="3.8" type="plugin" group="content" method="upgrade">
-    <name>PLG_CONTENT_JTLAW</name>
+	<name>PLG_CONTENT_JTLAW</name>
 	<creationDate>##DATE##</creationDate>
 	<author>Guido De Gobbis</author>
 	<authorEmail>support@joomtools.de</authorEmail>
@@ -8,35 +8,49 @@
 	<copyright>Copyright (C) ##YEAR## JoomTools.de. All rights reserved.</copyright>
 	<license>GPL v3</license>
 	<version>##VERSION##</version>
-    <description>PLG_CONTENT_JTLAW_DESC</description>
+	<description>PLG_CONTENT_JTLAW_DESC</description>
 
 	<files>
 		##FILES##
 	</files>
 
+	<scriptfile>script.php</scriptfile>
+
 	<languages folder="language">
 		##LANGUAGE_FILES##
 	</languages>
 
-    <config>
-        <fields name="params">
+	<config>
+		<fields name="params">
 
-            <fieldset name="basic">
-                <field name="server"
-                       type="url"
-                       default=""
-                       label="PLG_CONTENT_JTLAW_SERVER_LABEL"
-                       description="PLG_CONTENT_JTLAW_SERVER_DESC"/>
-                <field name="cachetime"
-                       type="text"
-                       default="1440"
-                       label="PLG_CONTENT_JTLAW_CACHETIME_LABEL"
-                       description="PLG_CONTENT_JTLAW_CACHETIME_DESC"/>
-            </fieldset>
+			<fieldset name="basic">
+				<field name="server"
+				       type="url"
+				       default=""
+				       label="PLG_CONTENT_JTLAW_SERVER_LABEL"
+				       description="PLG_CONTENT_JTLAW_SERVER_DESC"/>
+				<field name="cache"
+				       type="radio"
+				       class="btn-group btn-group-yesno"
+				       default="1"
+				       label="PLG_CONTENT_JTLAW_CACHE_LABEL"
+				       description="PLG_CONTENT_JTLAW_CACHE_DESC">
+					<option value="0">JOFF</option>
+					<option value="1">JON</option>
+				</field>
+				<field name="cachetime"
+				       type="text"
+				       default="1440"
+				       label="PLG_CONTENT_JTLAW_CACHETIME_LABEL"
+				       description="PLG_CONTENT_JTLAW_CACHETIME_DESC"
+				       validate=""
+				       showon="cache:1"
+				/>
+			</fieldset>
 
-        </fields>
-    </config>
-    <updateservers>
-        <server type="collection" priority="1" name="JT - Updateserver">https://github.com/JoomTools/plg_content_jtlaw/blob/master/update.xml</server>
-    </updateservers>
+		</fields>
+	</config>
+	<updateservers>
+		<server type="extension" priority="1" name="PLG_CONTENT_JTLAW">https://raw.githubusercontent.com/JoomTools/plg_content_jtlaw/master/update.xml</server>
+	</updateservers>
 </extension>
