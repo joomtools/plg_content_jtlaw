@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<extension version="2.5" type="plugin" group="content" method="upgrade">
+<extension version="3.8" type="plugin" group="content" method="upgrade">
     <name>PLG_CONTENT_JTLAW</name>
 	<creationDate>##DATE##</creationDate>
 	<author>Guido De Gobbis</author>
@@ -14,7 +14,7 @@
 		##FILES##
 	</files>
 
-	<languages folder="administrator/language">
+	<languages folder="language">
 		##LANGUAGE_FILES##
 	</languages>
 
@@ -37,6 +37,6 @@
         </fields>
     </config>
     <updateservers>
-        <server type="collection" priority="1" name="JT - Updateserver">https://github.com/JoomTools/plg_content_jtlaw/blob/master/plg_content_jtlaw.xml</server>
+        <server type="collection" priority="1" name="JT - Updateserver">https://github.com/JoomTools/plg_content_jtlaw/blob/master/update.xml</server>
     </updateservers>
 </extension>
