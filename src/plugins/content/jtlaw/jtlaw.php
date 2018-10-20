@@ -1,15 +1,12 @@
 <?php
 /**
- * Plugin for Joomla! 2.5 and higher
- * Insert and cache HTML files from Your own Server
+ * @package      Joomla.Plugin
+ * @subpackage   Content.Jtlaw
  *
- * @package     Joomla.Plugin
- * @subpackage  Content.jtlaw
- * @author      Guido De Gobbis <guido.de.gobbis@joomtools.de>
- * @copyright   2015 JoomTools
- * @license     GNU/GPLv3 <http://www.gnu.org/licenses/gpl-3.0.de.html>
- * @link        http://joomtools.de
- */
+ * @author       Guido De Gobbis <support@joomtools.de>
+ * @copyright    2018 JoomTools.de - All rights reserved.
+ * @license      GNU General Public License version 3 or later
+**/
 
 // No direct access
 defined('_JEXEC') or die;
