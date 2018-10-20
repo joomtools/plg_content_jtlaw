@@ -7,11 +7,12 @@
 		<type>plugin</type>
 		<folder>content</folder>
 		<client>site</client>
-		<version>1.0.5</version>
+		<version>1.0.6</version>
 		<downloads>
-			<downloadurl type="full" format="zip">https://github.com/JoomTools/plg_content_jtlaw/releases/download/1.0.5/plg_content_jtlaw-1.0.5.zip</downloadurl>
+			<downloadurl type="full" format="zip">https://github.com/JoomTools/plg_content_jtlaw/releases/download/1.0.6/plg_content_jtlaw-1.0.6.zip</downloadurl>
 		</downloads>
 		<maintainer>Guido De Gobbis</maintainer>
+		<php_minimum>7.1</php_minimum>
 		<targetplatform name="joomla" version="3.[89]"/>
 	</update>
 </updates>
