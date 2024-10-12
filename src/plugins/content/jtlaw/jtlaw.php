@@ -11,11 +11,13 @@
 // No direct access
 defined('_JEXEC') or die;
 
+use Joomla\CMS\Application\CMSApplication;
+use Joomla\CMS\Http\HttpFactory;
 use Joomla\CMS\Language\Text;
+use Joomla\CMS\Plugin\CMSPlugin;
 use Joomla\CMS\Profiler\Profiler;
-
-JLoader::import('joomla.filesystem.file');
-JLoader::import('joomla.filesystem.folder');
+use Joomla\Filesystem\File;
+use Joomla\Filesystem\Folder;
 
 /**
  * Class plgContentJtlaw
@@ -26,273 +28,258 @@ JLoader::import('joomla.filesystem.folder');
  * @subpackage  Content.jtlaw
  * @since       1.0.0
  */
-class PlgContentJtlaw extends JPlugin
+class PlgContentJtlaw extends CMSPlugin
 {
-	/**
-	 * Affects constructor behavior. If true, language files will be loaded automatically.
-	 *
-	 * @var     boolean
-	 * @since   1.0.5
-	 */
-	protected $autoloadLanguage = true;
-	/**
-	 * Global application object
-	 *
-	 * @var     JApplication
-	 * @since   1.0.5
-	 */
-	protected $app;
-	/**
-	 * Revised plugin parameters
-	 *
-	 * @var     array
-	 * @since   1.0.0
-	 */
-	protected $plgParams = [];
-	/**
-	 * Collection point for error messages
-	 *
-	 * @var     array
-	 * @since   1.0.0
-	 */
-	protected $message = [];
-	/**
-	 * Replacement for plugin call
-	 *
-	 * @var     string
-	 * @since   1.0.0
-	 */
-	protected $buffer = null;
+    /**
+     * Affects constructor behavior. If true, language files will be loaded automatically.
+     *
+     * @var     boolean
+     * @since   1.0.5
+     */
+    protected $autoloadLanguage = true;
 
-	/**
-	 * onContentPrepare
-	 *
-	 * @param   string   $context  The context of the content being passed to the plugin.
-	 * @param   object   $article  The article object.  Note $article->text is also available
-	 * @param   mixed    $params   The article params
-	 * @param   integer  $page     The 'page' number
-	 *
-	 * @return   void
-	 * @since    1.0.0
-	 */
-	public function onContentPrepare($context, &$article, &$params, $page = 0)
-	{
-		// Don't run in administration Panel or when the content is being indexed
-		if (strpos($article->text, '{jtlaw ') === false
-			|| $this->app->isClient('administrator') === true
-			|| $context == 'com_finder.indexer'
-			|| $this->app->input->getCmd('layout') == 'edit')
-		{
-			return;
-		}
-		// Startzeit und Speichernutzung für Auswertung
-		$startTime = microtime(1);
+    /**
+     * Global application object
+     *
+     * @var     CMSApplication
+     * @since   1.0.5
+     */
+    protected $app;
 
-		$debug = $this->params->get('debug', 0) == '0' ? true : false;
+    /**
+     * Revised plugin parameters
+     *
+     * @var     array
+     * @since   1.0.0
+     */
+    protected $plgParams = [];
 
-		if ($debug)
-		{
-			Profiler::getInstance('JT - Easylink (' . $context . ')')->setStart($startTime);
-		}
+    /**
+     * Collection point for error messages
+     *
+     * @var     array
+     * @since   1.0.0
+     */
+    protected $message = [];
 
-		$cachePath  = JPATH_CACHE . '/plg_content_jtlaw';
-		$cacheOnOff = filter_var(
-			$this->params->get('cache', 1),
-			FILTER_VALIDATE_BOOLEAN
-		);
+    /**
+     * Replacement for plugin call
+     *
+     * @var     string
+     * @since   1.0.0
+     */
+    protected $buffer = null;
 
-		$this->plgParams['server']    = rtrim($this->params->get('server'), '\\/');
-		$this->plgParams['cachetime'] = (int) $this->params->get('cachetime', 1440) * 60;
+    /**
+     * onContentPrepare
+     *
+     * @param   string   $context  The context of the content being passed to the plugin.
+     * @param   object   $article  The article object.  Note $article->text is also available
+     * @param   mixed    $params   The article params
+     * @param   integer  $page     The 'page' number
+     *
+     * @return   void
+     * @since    1.0.0
+     */
+    public function onContentPrepare($context, &$article, &$params, $page = 0)
+    {
+        // Don't run in administration Panel or when the content is being indexed
+        if (strpos($article->text, '{jtlaw ') === false
+            || $this->app->isClient('administrator') === true
+            || $context == 'com_finder.indexer'
+            || $this->app->input->getCmd('layout') == 'edit'
+        ) {
+            return;
+        }
+        // Startzeit und Speichernutzung für Auswertung
+        $startTime = microtime(1);
 
-		if ($this->plgParams['server'] == '')
-		{
-			$this->message['warning'][] = Text::_('PLG_CONTENT_JTLAW_WARNING_NO_SERVER');
-		}
+        $debug = $this->params->get('debug', 0) == '0' ? true : false;
 
-		if ($this->plgParams['cachetime'] < '3600')
-		{
-			$this->plgParams['cachetime'] = '3600';
-		}
+        if ($debug) {
+            Profiler::getInstance('JT - Law (' . $context . ')')->setStart($startTime);
+        }
 
-		if ($cacheOnOff === false)
-		{
-			$this->plgParams['cachetime'] = '0';
-		}
+        $cachePath  = JPATH_CACHE . '/plg_content_jtlaw';
+        $cacheOnOff = filter_var(
+            $this->params->get('cache', 1),
+            FILTER_VALIDATE_BOOLEAN
+        );
 
-		if (!JFolder::exists($cachePath))
-		{
-			JFolder::create($cachePath);
-		}
+        $this->plgParams['server']    = rtrim($this->params->get('server'), '\\/');
+        $this->plgParams['cachetime'] = (int) $this->params->get('cachetime', 1440) * 60;
 
-		$plgCalls = $this->getPlgCalls($article->text);
+        if ($this->plgParams['server'] == '') {
+            $this->message['warning'][] = Text::_('PLG_CONTENT_JTLAW_WARNING_NO_SERVER');
+        }
 
-		foreach ($plgCalls[0] as $key => $plgCall)
-		{
-			$fileName  = strtolower($plgCalls[1][$key]) . '.html';
-			$cacheFile = $cachePath . '/' . $fileName;
+        if ($this->plgParams['cachetime'] < '3600') {
+            $this->plgParams['cachetime'] = '3600';
+        }
 
-			if ($useCacheFile = JFile::exists($cacheFile))
-			{
-				$useCacheFile = $this->getFileTime($cacheFile);
-			}
+        if ($cacheOnOff === false) {
+            $this->plgParams['cachetime'] = '0';
+        }
 
-			$this->setBuffer($cacheFile, $useCacheFile);
-			$article->text = str_replace($plgCall, $this->buffer, $article->text);
-			$this->buffer  = null;
-		}
+        if (!is_dir($cachePath)) {
+            Folder::create($cachePath);
+        }
 
-		if ($debug)
-		{
-			if (!empty($this->message))
-			{
-				foreach ($this->message as $type => $msgs)
-				{
-					if ($type == 'error')
-					{
-						$msgs[] = Text::_('PLG_CONTENT_JTEASYLINK_ERROR_CHECKLIST');
-					}
+        $plgCalls = $this->getPlgCalls($article->text);
 
-					$msg = implode('<br />', $msgs);
-					$this->app->enqueueMessage($msg, $type);
-				}
-			}
+        foreach ($plgCalls[0] as $key => $plgCall) {
+            $fileName  = strtolower($plgCalls[1][$key]) . '.html';
+            $cacheFile = $cachePath . '/' . $fileName;
 
-			$this->app->enqueueMessage(
-				Profiler::getInstance('JT - Easylink (' . $context . ')')->mark('Verarbeitungszeit'),
-				'info'
-			);
-		}
-	}
+            if ($useCacheFile = file_exists($cacheFile)) {
+                $useCacheFile = $this->getFileTime($cacheFile);
+            }
 
-	/**
-	 * Find all plugin call's in $text and return them as array
-	 *
-	 * @param   string  $text  Text with plugin call's
-	 *
-	 * @return   array  All matches found in $text
-	 * @since    1.0.0
-	 */
-	protected function getPlgCalls($text)
-	{
-		$regex = '@(<(\w*+)[^>]*>)\s?{jtlaw\s(.*)}.*(</\2>)|{jtlaw\s(.*)}@iU';
-		$p1    = preg_match_all($regex, $text, $matches);
+            $this->setBuffer($cacheFile, $useCacheFile);
+            $article->text = str_replace($plgCall, $this->buffer, $article->text);
+            $this->buffer  = null;
+        }
 
-		if ($p1)
-		{
-			// Exclude <code/> and <pre/> matches
-			$code = array_keys($matches[1], '<code>');
-			$pre  = array_keys($matches[1], '<pre>');
+        if ($debug) {
+            if (!empty($this->message)) {
+                foreach ($this->message as $type => $msgs) {
+                    if ($type == 'error') {
+                        $msgs[] = Text::_('PLG_CONTENT_JTEASYLINK_ERROR_CHECKLIST');
+                    }
 
-			if (!empty($code) || !empty($pre))
-			{
-				array_walk($matches,
-					function (&$array, $key, $tags) {
-						foreach ($tags as $tag)
-						{
-							if ($tag !== null && $tag !== false)
-							{
-								unset($array[$tag]);
-							}
-						}
-					}, array_merge($code, $pre)
-				);
-			}
+                    $msg = implode('<br />', $msgs);
+                    $this->app->enqueueMessage($msg, $type);
+                }
+            }
 
-			$options = [];
+            $this->app->enqueueMessage(
+                Profiler::getInstance('JT - Law (' . $context . ')')->mark('Verarbeitungszeit'),
+                'info'
+            );
+        }
+    }
 
-			foreach ($matches[0] as $key => $value)
-			{
-				if (!empty($matches[3][$key]))
-				{
-					$options[$key] = trim($matches[3][$key]);
-				}
+    /**
+     * Find all plugin call's in $text and return them as array
+     *
+     * @param   string  $text  Text with plugin call's
+     *
+     * @return   array  All matches found in $text
+     * @since    1.0.0
+     */
+    protected function getPlgCalls($text)
+    {
+        $regex = '@(<(\w*+)[^>]*>)\s?{jtlaw\s(.*)}.*(</\2>)|{jtlaw\s(.*)}@iU';
+        $p1    = preg_match_all($regex, $text, $matches);
 
-				if (empty($matches[3][$key]) && !empty($matches[5][$key]))
-				{
-					$options[$key] = trim($matches[5][$key]);
-				}
-			}
+        if ($p1) {
+            // Exclude <code/> and <pre/> matches
+            $code = array_keys($matches[1], '<code>');
+            $pre  = array_keys($matches[1], '<pre>');
 
-			return array(
-				$matches[0],
-				$options,
-			);
-		}
+            if (!empty($code) || !empty($pre)) {
+                array_walk($matches,
+                    function (&$array, $key, $tags) {
+                        foreach ($tags as $tag) {
+                            if ($tag !== null && $tag !== false) {
+                                unset($array[$tag]);
+                            }
+                        }
+                    },     array_merge($code, $pre)
+                );
+            }
 
-		return array();
-	}
+            $options = [];
 
-	/**
-	 * Check to see if the cache file is up to date
-	 *
-	 * @param   string  $file  Filename with absolute path
-	 *
-	 * @return   bool  true if cached file is up to date
-	 * @since    1.0.0
-	 */
-	protected function getFileTime($file)
-	{
-		$time      = time();
-		$cacheTime = $this->plgParams['cachetime'];
-		$fileTime  = filemtime($file);
+            foreach ($matches[0] as $key => $value) {
+                if (!empty($matches[3][$key])) {
+                    $options[$key] = trim($matches[3][$key]);
+                }
 
-		$control = $time - $fileTime;
+                if (empty($matches[3][$key]) && !empty($matches[5][$key])) {
+                    $options[$key] = trim($matches[5][$key]);
+                }
+            }
 
-		if ($control >= $cacheTime)
-		{
-			return false;
-		}
+            return array(
+                $matches[0],
+                $options,
+            );
+        }
 
-		return true;
-	}
+        return array();
+    }
 
-	/**
-	 * Load HTML file from Server or get cached file
-	 *
-	 * @param   string $cacheFile    Filename with absolute path
-	 * @param   bool   $useCacheFile @see PlgContentJtlaw->getFileTime($file)
-	 *
-	 * @return   bool  true if buffer is set else false
-	 * @since    1.0.0
-	 */
-	protected function setBuffer($cacheFile, $useCacheFile = false)
-	{
-		$server   = $this->plgParams['server'];
-		$fileName = basename($cacheFile);
+    /**
+     * Check to see if the cache file is up to date
+     *
+     * @param   string  $file  Filename with absolute path
+     *
+     * @return   bool  true if cached file is up to date
+     * @since    1.0.0
+     */
+    protected function getFileTime($file)
+    {
+        $time      = time();
+        $cacheTime = $this->plgParams['cachetime'];
+        $fileTime  = filemtime($file);
 
-		if ($useCacheFile === false)
-		{
-			$http = JHttpFactory::getHttp();
-			$data = $http->get($server . '/' . $fileName);
+        $control = $time - $fileTime;
 
-			if ($data->code >= 200 && $data->code < 400)
-			{
-				$result = preg_replace(array('@<br>@i'), array('<br />'), $data->body);
+        if ($control >= $cacheTime) {
+            return false;
+        }
 
-				JFile::delete($cacheFile);
-				JFile::write($cacheFile, $result);
+        return true;
+    }
 
-				$this->buffer = $result;
+    /**
+     * Load HTML file from Server or get cached file
+     *
+     * @param   string  $cacheFile     Filename with absolute path
+     * @param   bool    $useCacheFile  @see PlgContentJtlaw->getFileTime($file)
+     *
+     * @return   bool  true if buffer is set else false
+     * @since    1.0.0
+     */
+    protected function setBuffer($cacheFile, $useCacheFile = false)
+    {
+        $server   = $this->plgParams['server'];
+        $fileName = basename($cacheFile);
 
-				return true;
-			}
+        if ($useCacheFile === false) {
+            $http = HttpFactory::getHttp();
+            $data = $http->get($server . '/' . $fileName);
 
-			if (JFile::exists($cacheFile))
-			{
-				$this->setBuffer($cacheFile, true);
+            if ($data->code >= 200 && $data->code < 400) {
+                $result = preg_replace(array('@<br>@i'), array('<br />'), $data->body);
 
-				return true;
-			}
+                if (file_exists($cacheFile)) {
+                    File::delete($cacheFile);
+                }
 
-			$this->message['error'][] = Text::sprintf(
-				'PLG_CONTENT_JTLAW_ERROR_NO_CACHE_SERVER', $fileName, $data->code
-			);
+                File::write($cacheFile, $result);
 
-			return false;
-		}
+                $this->buffer = $result;
 
-		$this->buffer = @file_get_contents($cacheFile);
+                return true;
+            }
 
-		return true;
-	}
+            if (file_exists($cacheFile)) {
+                $this->setBuffer($cacheFile, true);
+
+                return true;
+            }
+
+            $this->message['error'][] = Text::sprintf(
+                'PLG_CONTENT_JTLAW_ERROR_NO_CACHE_SERVER', $fileName, $data->code
+            );
+
+            return false;
+        }
+
+        $this->buffer = @file_get_contents($cacheFile);
+
+        return true;
+    }
 }
