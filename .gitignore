@@ -23,6 +23,9 @@ Desktop.ini
 .project
 .settings
 
+#VSCode
+.vscode
+
 # Temp files
 *.tmp
 *.bak
@@ -35,12 +38,14 @@ build.properties
 phing-latest.phar
 
 # Github pages and Jekyll files
-_site/
-Gemfile
-Gemfile.lock
+/_site/
+/Gemfile
+/Gemfile.lock
 
 # composer
+composer.lock
 composer.phar
+composer.lock
 vendor/*
 
 # Robo
@@ -57,10 +62,11 @@ selenium-server-standalone.jar
 codecept.phar
 selenium.log
 tests/cache
-/**/cache/*
-!/**/cache/index.html
 
 # Package building related
 /dist
 jorobo.ini
 auth.json
+
+# PHPStan Joomla base
+/joomla*
